@@ -1,8 +1,21 @@
-from flask import Flask,jsonify,request,redirect
-import random,string
-url_database = {}
+from flask import Flask, jsonify, request, redirect
+from flask_sqlalchemy import SQLAlchemy
+
+import random
+import string
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///url_shortener.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+class URL(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    original_url = db.Column(db.String(200), nullable=False)
+    short_code = db.Column(db.String(6), unique=True, nullable=False)
+
+with app.app_context():
+    db.create_all()
 
 @app.route('/')
 def home():
