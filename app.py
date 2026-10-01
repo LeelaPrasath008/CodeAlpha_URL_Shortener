@@ -9,11 +9,20 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///url_shortener.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-class URL(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    original_url = db.Column(db.String(200), nullable=False)
-    short_code = db.Column(db.String(6), unique=True, nullable=False)
+class Url(db.Model):
 
+    id = db.Column(db.Integer, primary_key=True)
+
+    short_code = db.Column(
+        db.String(10),
+        unique=True,
+        nullable=False
+    )
+
+    original_url = db.Column(
+        db.String(500),
+        nullable=False
+    )
 with app.app_context():
     db.create_all()
 
