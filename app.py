@@ -1,14 +1,25 @@
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, jsonify, request, redirect, render_template
 from flask_sqlalchemy import SQLAlchemy
-
 import random
 import string
+from urllib.parse import urlparse
+
+
+
+def is_valid_url(url):
+    parsed = urlparse(url)
+    return bool(parsed.scheme and parsed.netloc)
 
 app = Flask(__name__)
+
+# Database Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///url_shortener.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
+
+# Database Model
 class Url(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
@@ -23,70 +34,106 @@ class Url(db.Model):
         db.String(500),
         nullable=False
     )
-with app.app_context():
-    db.create_all()
 
+    clicks = db.Column(
+        db.Integer,
+        default=0
+    )
+
+
+# Home Route
 @app.route('/')
 def home():
-    return "Hello Backend Intern!"
+    return render_template('index.html')
 
-@app.route('/api/test')
-def test_api():
-    return jsonify({
-        "message": "API Working Successfully",
-        "status": "success"
-    })
 
-@app.route('/leela')
-def leela():
-    return jsonify({
-        "zebra": 1,
-        "apple": 2,
-        "monkey": 3
-    })
-
+# Create Short URL
 @app.route('/api/shorten', methods=['POST'])
 def shorten_url():
+
     data = request.get_json()
+
     url = data["url"]
-    characters = string.ascii_letters + string.digits
-    short_code = ''.join(
-        random.choice(characters)
-        for _ in range(6)
+
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
+    if not is_valid_url(url):
+
+        return jsonify({
+            "error": "Invalid URL"
+        }), 400
+
+
+    while True:
+
+        short_code = ''.join(
+            random.choices(
+                string.ascii_letters + string.digits,
+                k=6
+            )
+        )
+
+        existing_url = Url.query.filter_by(
+            short_code=short_code
+        ).first()
+
+        if not existing_url:
+            break
+
+    new_url = Url(
+        short_code=short_code,
+        original_url=url
     )
-    url_database[short_code] = url
+
+    db.session.add(new_url)
+    db.session.commit()
+
     return jsonify({
         "original_url": url,
         "short_code": short_code
     })
 
-@app.route('/generate')
-def generate():
-    characters = string.ascii_letters + string.digits
-    short_code = ''.join(
-        random.choice(characters)
-        for _ in range(6)
-    )
-    return jsonify({
-        "short_code": short_code
-    })
 
+# View All URLs
+@app.route('/db-all')
+def db_all():
+
+    urls = Url.query.all()
+    result = []
+    for url in urls:
+        result.append({
+            "id": url.id,
+            "short_code": url.short_code,
+            "original_url": url.original_url,
+            "clicks": url.clicks
+        })
+
+    return jsonify(result)
+
+
+# Redirect Route
 @app.route('/<short_code>')
 def redirect_url(short_code):
 
-    if short_code in url_database:
+    url = Url.query.filter_by(
+        short_code=short_code
+    ).first()
 
-        original_url = url_database[short_code]
-
-        return redirect(original_url)
+    if url:
+        url.clicks += 1
+        db.session.commit()
+        return redirect(url.original_url)
 
     return jsonify({
         "error": "Short URL not found"
     }), 404
 
-@app.route('/all')
-def all_urls():
-    return jsonify(url_database)
+
+# Create Database Tables
+with app.app_context():
+    db.create_all()
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial,sans-serif;
+        }
+
+        body{
+            background:#f4f6f9;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+        }
+
+        .container{
+            background:white;
+            padding:30px;
+            border-radius:12px;
+            box-shadow:0 4px 10px rgba(0,0,0,0.1);
+            width:450px;
+            text-align:center;
+        }
+
+        h1{
+            margin-bottom:20px;
+            color:#333;
+        }
+
+        input{
+            width:100%;
+            padding:12px;
+            border:1px solid #ccc;
+            border-radius:8px;
+            margin-bottom:15px;
+            font-size:16px;
+        }
+
+        button{
+            width:100%;
+            padding:12px;
+            background:#007bff;
+            color:white;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+            font-size:16px;
+        }
+
+        button:hover{
+            background:#0056b3;
+        }
+
+        .result{
+            margin-top:20px;
+            word-break:break-word;
+        }
+
+        .short-link{
+            color:#007bff;
+            text-decoration:none;
+            font-weight:bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>URL Shortener</h1>
+
+    <input
+        type="text"
+        id="urlInput"
+        placeholder="Enter URL"
+    >
+
+    <button onclick="shortenUrl()">
+        Shorten URL
+    </button>
+
+    <div class="result" id="result"></div>
+    <button onclick="copyUrl()">
+        Copy URL
+    </button>
+
+</div>
+
+<script>
+
+async function shortenUrl(){
+
+    const url = document.getElementById("urlInput").value;
+
+    const response = await fetch('/api/shorten',{
+        method:'POST',
+        headers:{
+            'Content-Type':'application/json'
+        },
+        body:JSON.stringify({
+            url:url
+        })
+    });
+
+    const data = await response.json();
+
+    const shortUrl =
+        window.location.origin +
+        "/" +
+        data.short_code;
+
+    document.getElementById("result").innerHTML =
+    `
+        <p><strong>Original URL:</strong></p>
+        <p>${data.original_url}</p>
+
+        <br>
+
+        <p><strong>Short URL:</strong></p>
+
+        <a
+            href="${shortUrl}"
+            target="_blank"
+            class="short-link"
+        >
+            ${shortUrl}
+        </a>
+    `;
+}
+
+</script>
+
+</body>
+</html>
