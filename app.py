@@ -6,10 +6,20 @@ from urllib.parse import urlparse
 
 
 
-def is_valid_url(url):
-    parsed = urlparse(url)
-    return bool(parsed.scheme and parsed.netloc)
+from urllib.parse import urlparse
 
+def is_valid_url(url):
+
+    parsed = urlparse(url)
+
+    if not (parsed.scheme and parsed.netloc):
+        return False
+
+    # Domain must contain a dot
+    if "." not in parsed.netloc:
+        return False
+
+    return True
 app = Flask(__name__)
 
 # Database Configuration
@@ -53,15 +63,24 @@ def shorten_url():
 
     data = request.get_json()
 
-    url = data["url"]
+    if not data:
+        return jsonify({
+            "error": "No data received"
+        }), 400
 
+    url = data.get("url")
+
+    if not url:
+        return jsonify({
+            "error": "URL is required"
+        }), 400
     if not url.startswith(("http://", "https://")):
         url = "https://" + url
 
     if not is_valid_url(url):
 
         return jsonify({
-            "error": "Invalid URL"
+            "error": "Please enter a valid URL (example: google.com)"
         }), 400
 
 

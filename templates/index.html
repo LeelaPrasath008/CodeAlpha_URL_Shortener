@@ -174,32 +174,28 @@ async function shortenUrl(){
     try{
 
         const response = await fetch('/api/shorten',{
+    method:'POST',
+    headers:{
+        'Content-Type':'application/json'
+    },
+    body:JSON.stringify({
+        url:url
+    })
+});
 
-            method:'POST',
+const data = await response.json();
 
-            headers:{
-                'Content-Type':'application/json'
-            },
+if(!response.ok){
 
-            body:JSON.stringify({
-                url:url
-            })
+    document.getElementById("result").innerHTML =
+    `
+        <p class="error">
+            ${data.error}
+        </p>
+    `;
 
-        });
-
-        const data = await response.json();
-
-        if(data.error){
-
-            document.getElementById("result").innerHTML =
-            `
-                <p class="error">
-                    ${data.error}
-                </p>
-            `;
-
-            return;
-        }
+    return;
+}
 
         const shortUrl =
             window.location.origin +
